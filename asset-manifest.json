@@ -1,0 +1,15 @@
+{
+  "files": {
+    "main.css": "/KeenChat/static/css/main.68c1540a.css",
+    "main.js": "/KeenChat/static/js/main.e2a7e599.js",
+    "static/js/787.9a765a7f.chunk.js": "/KeenChat/static/js/787.9a765a7f.chunk.js",
+    "index.html": "/KeenChat/index.html",
+    "main.68c1540a.css.map": "/KeenChat/static/css/main.68c1540a.css.map",
+    "main.e2a7e599.js.map": "/KeenChat/static/js/main.e2a7e599.js.map",
+    "787.9a765a7f.chunk.js.map": "/KeenChat/static/js/787.9a765a7f.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.68c1540a.css",
+    "static/js/main.e2a7e599.js"
+  ]
+}
