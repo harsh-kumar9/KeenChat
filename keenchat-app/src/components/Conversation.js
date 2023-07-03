@@ -8,6 +8,7 @@ import "../styles/Conversation.css";
 
 import { TextField, Button } from "@mui/material";
 
+
 const Conversation = () => {
   const dispatch = useDispatch();
   const langchain = useSelector((state) => state.langchain);
@@ -55,17 +56,17 @@ const Conversation = () => {
   };
 
   return (
-    <div>
-      <div className="convo-history">
+    <div className="conversation">
+      <div className="convo-history-container">
         {langchain.history.map((history, index) => (
-          <div key={index} className="convo-history">
-            <div>
-              <span>{langchain.human_identifier}</span>
+          <div key={index}>
+            <div className="human-convo">
+              {/* <span>{langchain.human_identifier}</span> */}
               <p>{history[langchain.human_identifier]}</p>
             </div>
-
-            <div>
-              <span>{langchain.bot_identifier}</span>
+  
+            <div className="bot-convo">
+              {/* <span>{langchain.bot_identifier}</span> */}
               <p>
                 {index === langchain.history.length - 1
                   ? convo.output
@@ -75,13 +76,14 @@ const Conversation = () => {
           </div>
         ))}
       </div>
-      <form onSubmit={handleMessageSubmit}>
+      <form onSubmit={handleMessageSubmit} className="message-form">
         <TextField
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           label="Type a message"
+          className="message-input"
         />
-        <Button type="submit" variant="contained">
+        <Button type="submit" variant="contained" className="send-button">
           Send
         </Button>
       </form>
