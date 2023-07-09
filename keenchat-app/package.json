@@ -1,12 +1,13 @@
 {
   "name": "keenchat-app",
-  "homepage": "https://harsh-kumar.com/KeenChat"
+  "homepage": "https://harsh-kumar.com/KeenChat",
   "version": "0.1.0",
   "private": true,
   "dependencies": {
     "@emotion/react": "^11.11.1",
     "@emotion/styled": "^11.11.0",
     "@fontsource/roboto": "^5.0.3",
+    "@huggingface/inference": "1",
     "@mui/icons-material": "^5.11.16",
     "@mui/material": "^5.13.6",
     "@reduxjs/toolkit": "^1.9.5",
@@ -15,6 +16,7 @@
     "@testing-library/user-event": "^13.5.0",
     "dotenv": "^16.3.1",
     "langchain": "^0.0.102",
+    "n": "^9.1.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-redux": "^8.1.1",
@@ -24,8 +26,8 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
-    "predeploy" : "npm run build",
-    "deploy" : "gh-pages -d build",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "start:development": "env-cmd -f .env.development.local npm run-script start",

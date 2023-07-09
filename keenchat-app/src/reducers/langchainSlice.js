@@ -4,7 +4,7 @@ const prompt = `The following is a friendly conversation between a human and an 
 
 Current conversation:
 {chat_history}
-Human: {input}
+Human: {inputs}
 AI:`;
 
 const langchainSlice = createSlice({
@@ -15,7 +15,7 @@ const langchainSlice = createSlice({
     human_identifier: "Human",
     inputJSON: {
       chat_history: "",
-      input: "",
+      inputs: "",
     },
     history: [],
     isLoading: false,
@@ -24,7 +24,7 @@ const langchainSlice = createSlice({
     reset(state) {
       state.inputJSON = {
         chat_history: "",
-        input: "",
+        inputs: "",
       };
       state.history = [];
     },
@@ -34,7 +34,7 @@ const langchainSlice = createSlice({
     },
     sInput(state, action) {
       const payload = action.payload;
-      state.inputJSON.input = payload.input;
+      state.inputJSON.inputs = payload.inputs;
     },
     sInputJSON(state, action) {
       const payload = action.payload;
