@@ -3,11 +3,10 @@ import { useSelector, useDispatch } from "react-redux";
 
 import { convoActions } from "../reducers/convoSlice";
 import { langchainActions } from "../reducers/langchainSlice";
-import { ask } from "../actions/langchainAction";
+import { ask, react } from "../actions/langchainAction";
 import "../styles/Conversation.css";
 
 import { TextField, Button } from "@mui/material";
-
 
 const Conversation = () => {
   const dispatch = useDispatch();
@@ -40,7 +39,7 @@ const Conversation = () => {
         langchain.human_identifier,
         langchain.history
       );
-      inputJSON.input = inputValue;
+      inputJSON.inputs = inputValue;
 
       dispatch(convoActions.reset());
       dispatch(
@@ -55,6 +54,18 @@ const Conversation = () => {
     }
   };
 
+  const handleMessageChange = (e) => {
+    const message = e.target.value;
+    setInputValue(message);
+
+    if (message === "") {
+      dispatch(convoActions.reset());
+    } else {
+      const inputJSON = { inputs: message };
+      dispatch(react(inputJSON));
+    }
+  };
+
   return (
     <div className="conversation">
       <div className="convo-history-container">
@@ -64,7 +75,7 @@ const Conversation = () => {
               {/* <span>{langchain.human_identifier}</span> */}
               <p>{history[langchain.human_identifier]}</p>
             </div>
-  
+
             <div className="bot-convo">
               {/* <span>{langchain.bot_identifier}</span> */}
               <p>
@@ -76,10 +87,13 @@ const Conversation = () => {
           </div>
         ))}
       </div>
+      <div>
+        <p>{convo.reaction}</p>
+      </div>
       <form onSubmit={handleMessageSubmit} className="message-form">
         <TextField
           value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
+          onChange={handleMessageChange}
           label="Type a message"
           className="message-input"
         />
