@@ -2,11 +2,11 @@ import React, { useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 
 import { convoActions } from "../reducers/convoSlice";
-import { langchainActions } from "../reducers/langchainSlice";
 import { ask, react } from "../actions/langchainAction";
 import "../styles/Conversation.css";
 
 import { TextField, Button } from "@mui/material";
+import ReactionEmoji from "./ReactionEmoji";
 
 const Conversation = () => {
   const dispatch = useDispatch();
@@ -88,6 +88,7 @@ const Conversation = () => {
         ))}
       </div>
       <div>
+        {convo.reaction !== "" && <ReactionEmoji reaction={convo.reaction} />}
         <p>{convo.reaction}</p>
       </div>
       <form onSubmit={handleMessageSubmit} className="message-form">
