@@ -1,17 +1,17 @@
 {
   "files": {
-    "main.css": "/KeenChat/static/css/main.4bac2cb4.css",
-    "main.js": "/KeenChat/static/js/main.13c3db07.js",
+    "main.css": "/KeenChat/static/css/main.69363641.css",
+    "main.js": "/KeenChat/static/js/main.f5c5ee06.js",
     "static/js/812.ea8e6e86.chunk.js": "/KeenChat/static/js/812.ea8e6e86.chunk.js",
     "static/js/787.9a765a7f.chunk.js": "/KeenChat/static/js/787.9a765a7f.chunk.js",
     "index.html": "/KeenChat/index.html",
-    "main.4bac2cb4.css.map": "/KeenChat/static/css/main.4bac2cb4.css.map",
-    "main.13c3db07.js.map": "/KeenChat/static/js/main.13c3db07.js.map",
+    "main.69363641.css.map": "/KeenChat/static/css/main.69363641.css.map",
+    "main.f5c5ee06.js.map": "/KeenChat/static/js/main.f5c5ee06.js.map",
     "812.ea8e6e86.chunk.js.map": "/KeenChat/static/js/812.ea8e6e86.chunk.js.map",
     "787.9a765a7f.chunk.js.map": "/KeenChat/static/js/787.9a765a7f.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.4bac2cb4.css",
-    "static/js/main.13c3db07.js"
+    "static/css/main.69363641.css",
+    "static/js/main.f5c5ee06.js"
   ]
 }
