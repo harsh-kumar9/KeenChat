@@ -37,6 +37,7 @@ const emojiSlice = createSlice({
     emojiPlaySetting: {
       background: "transparent",
       style: { height: "100%", width: "100%" },
+      noDisplay: { display: "none" },
       speed: "1",
       loop: true,
       autoplay: true,
@@ -60,10 +61,12 @@ const emojiSlice = createSlice({
         "https://lottie.host/385ce493-8132-43ee-b7f3-a3a988f69f25/kCgqAsAWOn.json",
     },
     currEmoji: "",
+    isloaded: false,
   },
   reducers: {
     reset(state) {
       state.currEmoji = "";
+      state.isloaded = false;
     },
     sCurrEmoji(state, action) {
       const payload = action.payload;
@@ -80,6 +83,10 @@ const emojiSlice = createSlice({
       } else {
         state.currEmoji = "";
       }
+    },
+    sIsLoaded(state, action) {
+      const payload = action.payload;
+      state.isloaded = payload.isloaded;
     },
   },
 });

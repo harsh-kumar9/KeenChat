@@ -2,16 +2,18 @@ import React, { useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 
 import { convoActions } from "../reducers/convoSlice";
+import { emojiActions } from "../reducers/emojiSlice";
 import { ask, react } from "../actions/langchainAction";
 import "../styles/Conversation.css";
 
 import { TextField, Button } from "@mui/material";
 import ReactionEmoji from "./ReactionEmoji";
 
-const Conversation = () => {
+const Conversation = ({ type }) => {
   const dispatch = useDispatch();
   const langchain = useSelector((state) => state.langchain);
   const convo = useSelector((state) => state.convo);
+  const emoji = useSelector((state) => state.emoji);
   const [inputValue, setInputValue] = useState("");
 
   const historyToText = (botIdentifier, humanIdentifier, historyJSON) => {
@@ -40,6 +42,10 @@ const Conversation = () => {
         langchain.history
       );
       inputJSON.inputs = inputValue;
+
+      if (type) {
+        dispatch(emojiActions.reset());
+      }
 
       dispatch(convoActions.reset());
       dispatch(
@@ -88,7 +94,9 @@ const Conversation = () => {
         ))}
       </div>
       <div>
-        {convo.reaction !== "" && <ReactionEmoji reaction={convo.reaction} />}
+        {type && convo.reaction !== "" && (
+          <ReactionEmoji reaction={convo.reaction} type={type} />
+        )}
         <p>{convo.reaction}</p>
       </div>
       <form onSubmit={handleMessageSubmit} className="message-form">
