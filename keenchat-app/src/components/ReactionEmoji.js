@@ -6,8 +6,10 @@ import "../styles/ReactionEmoji.css";
 
 import { Player, Controls } from "@lottiefiles/react-lottie-player";
 
+// ReactionEmoji component
 const ReactionEmoji = ({ reaction, type }) => {
   const dispatch = useDispatch();
+
   const emoji = useSelector((state) => state.emoji);
   const [isloaded, setIsLoaded] = useState(false);
   const playerRef = useRef(null);

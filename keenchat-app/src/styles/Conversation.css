@@ -6,7 +6,8 @@
 .conversation {
   background-color: #f9f2e9;
   font-family: Arial, sans-serif;
-  padding: 20px;
+  padding: 0px 20px;
+  height: 100vh;
 }
 
 .convo-history-container {
@@ -14,6 +15,7 @@
   padding: 10px;
   border-radius: 5px;
   margin-bottom: 15px;
+  min-height: 70vh;
   max-height: 80vh;
   overflow-y: auto;
 }
@@ -34,6 +36,7 @@
 
 .bot-convo {
   background-color: #d6d2c4;
+  /* background-color: #f9bd0a; */
   color: #333;
   margin: 5px auto 5px 5px;
   padding: 10px;
@@ -55,4 +58,44 @@
 .send-button {
   background-color: #fbd38d;
   color: #333;
+}
+
+#bot_avatar_img {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  margin-right: 10px;
+}
+
+.bot_avatar {
+  padding: 20px;
+  font-size: 20px;
+}
+
+.bot_avatar {
+  display: flex;
+  align-items: center; /* Align vertically in the center */
+}
+
+.bot_avatar img {
+  /* If you need to control the image size or any other styling */
+  /* Example: max-width: 100px; */
+}
+
+.bot_avatar span {
+  /* Any additional styling for the text */
+  /* Example: font-weight: bold; */
+}
+
+.backchannel_container {
+  background-color: #f9bd0a;
+  border-radius: 10px;
+  padding: 10px;
+  margin-bottom: 10px;
+  display: inline-block; /* This will make the container only as wide as its content */
+}
+
+.backchannel_container p {
+  font-style: italic;
+  margin: 0; /* Remove default margins from the paragraph */
 }
