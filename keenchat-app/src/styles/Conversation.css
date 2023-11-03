@@ -73,8 +73,9 @@
 }
 
 .bot_avatar {
-  display: flex;
+  display: inline-flex;
   align-items: center; /* Align vertically in the center */
+  margin-right: 10px;
 }
 
 .bot_avatar img {
@@ -93,9 +94,15 @@
   padding: 10px;
   margin-bottom: 10px;
   display: inline-block; /* This will make the container only as wide as its content */
+  
 }
 
 .backchannel_container p {
   font-style: italic;
   margin: 0; /* Remove default margins from the paragraph */
+}
+
+.avatar-backchannel-container {
+  display: flex;
+  align-items: center; /* Vertical centering */
 }
