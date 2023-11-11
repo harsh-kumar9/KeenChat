@@ -1,3 +1,35 @@
+/* Define a class for fading in messages */
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* Apply the animation to the element */
+.fade-in-backchannel {
+  animation: fadeIn 1.2s forwards;
+}
+
+@keyframes fadeInOut {
+  0% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Apply the animation to the element */
+.fade-in-out-backchannel {
+  animation: fadeInOut 2s forwards;
+}
 .convo-history {
   flex: 1;
   flex-direction: column;
@@ -6,7 +38,7 @@
 .conversation {
   background-color: #f9f2e9;
   font-family: Arial, sans-serif;
-  padding: 0px 20px;
+  padding: 5px 20px 0px 20px;
   height: 100vh;
 }
 
@@ -16,7 +48,7 @@
   border-radius: 5px;
   margin-bottom: 15px;
   min-height: 70vh;
-  max-height: 80vh;
+  max-height: 70vh;
   overflow-y: auto;
 }
 
