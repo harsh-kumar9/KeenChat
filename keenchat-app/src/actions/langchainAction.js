@@ -72,7 +72,7 @@ export const ask = (
       },
     ]);
 
-    // console.log(res);
+    return res;
   };
 };
 

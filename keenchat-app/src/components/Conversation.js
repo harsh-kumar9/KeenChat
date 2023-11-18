@@ -68,6 +68,7 @@ const Conversation = ({ type }) => {
     let text = "";
     console.log("history to text");
     console.log(historyJSON);
+    let botMsg = "";
     for (let i = 0; i < historyJSON.length; i++) {
       // msg is by human
       if (historyJSON[i][humanIdentifier].length > 0) {
@@ -75,7 +76,8 @@ const Conversation = ({ type }) => {
       }
       // msg is by bot
       if (historyJSON[i][botIdentifier].length > 0) {
-        text += `${botIdentifier}: ` + historyJSON[i][botIdentifier] + "\n";
+        botMsg = historyJSON[i][botIdentifier];
+        text += `${botIdentifier}: ` + botMsg + "\n";
       }
     }
 
@@ -103,6 +105,8 @@ const Conversation = ({ type }) => {
 
       // dispatch convo reset
       dispatch(convoActions.reset());
+
+      // get bot message
       dispatch(
         ask(
           langchain.prompt,
@@ -110,10 +114,16 @@ const Conversation = ({ type }) => {
           langchain.human_identifier,
           inputJSON
         )
-      );
+      ).then((botResponse) => {
+        // Access the bot's response from the state or wherever it is stored
+        // console.log(langchain);
+        // const botResponse = langchain.botResponse; // Replace with the actual state structure
 
-      // reset input value to empty
-      setInputValue("");
+        fetchAndUpdateAudioData(botResponse["text"]);
+
+        // reset input value to empty
+        setInputValue("");
+      });
     }
   };
 
@@ -164,7 +174,9 @@ const Conversation = ({ type }) => {
     const apiKey = "5e8fc541c60a889eb2548d69bbdc94d8";
 
     // ID of voice to be used for speech
-    const voiceId = "21m00Tcm4TlvDq8ikWAM";
+    // const voiceId = "21m00Tcm4TlvDq8ikWAM";
+    // const voiceId = "LcfcDJNUP1GQjkzn1xUU";
+    const voiceId = "onwK4e9ZLuTAKqWW03F9";
 
     // API request options
     const apiRequestOptions = {
