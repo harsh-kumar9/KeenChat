@@ -11,20 +11,11 @@ import ReactionEmoji from "./ReactionEmoji";
 import bot_talk from "../assets/bot-talk.png";
 import bot_listen from "../assets/bot-listen.png";
 import { OpenAIApi } from "openai";
-import axios from "axios";
 import * as sdk from "microsoft-cognitiveservices-speech-sdk";
 
-// replace with your own subscription key,
-// service region (e.g., "westus"), and
-// the name of the file you save the synthesized audio.
+// Azure Speech Services credentials
 var subscriptionKey = "86be001229f24a638dd9ccfc0b443de5";
 var serviceRegion = "eastus"; // e.g., "westus"
-
-// const { OpenAIApi } = require("openai");
-// const client = new OpenAIApi({
-//   api_key: process.env.REACT_APP_OPENAI_API_TOKEN,
-// });
-const openai = new OpenAIApi(process.env.REACT_APP_OPENAI_API_TOKEN);
 
 // Conversation component
 // type: none, static, animated
@@ -46,7 +37,6 @@ const Conversation = ({ type }) => {
   // global states
   const langchain = useSelector((state) => state.langchain);
   const convo = useSelector((state) => state.convo);
-  console.log(convo.reaction);
   const emoji = useSelector((state) => state.emoji);
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
@@ -54,12 +44,28 @@ const Conversation = ({ type }) => {
   const [selectedEmoji, setSelectedEmoji] = useState("");
   const [sourceUrl, setSourceUrl] = useState(null);
   const [voiceBackchannel, setVoiceBackchannel] = useState("hello");
-  // we are done with the setup
-
-  // Define state for synthesizer to manage its lifecycle
   const [synthesizer, setSynthesizer] = useState(null);
+  const moodToEmojiMapping = {
+    confusion: "😕",
+    anger: "😡",
+    neutral: "",
+    sadness: "😢",
+    joy: "😄",
+    admiration: "😍",
+    fear: "😱",
+    nervousness: "😬",
+    disapproval: "😕",
+    disgust: "😢",
+  };
 
-  // useEffect hook to instantiate and dispose of the synthesizer
+  // Update emojiForMood based on the value of convo.reaction
+  useEffect(() => {
+    console.log(convo.reaction);
+    const selectedEmoji = moodToEmojiMapping[convo.reaction] || "."; // Default to a question mark if mood is not found
+    setSelectedEmoji(selectedEmoji);
+  }, [convo.reaction]);
+
+  // Synthesizer for TTS (text-to-speech)
   useEffect(() => {
     // Instantiate the synthesizer
     const speechConfig = sdk.SpeechConfig.fromSubscription(
@@ -102,21 +108,7 @@ const Conversation = ({ type }) => {
     }
   };
 
-  // confusion, anger, neutral, sadness, joy, admiration, fear, nervousness
-  const moodToEmojiMapping = {
-    confusion: "😕",
-    anger: "😡",
-    neutral: "",
-    sadness: "😢",
-    joy: "😄",
-    admiration: "😍",
-    fear: "😱",
-    nervousness: "😬",
-    disapproval: "😕",
-    disgust: "😢",
-  };
-
-  // get chat history from JSON
+  // Get chat history from JSON
   const historyToText = (botIdentifier, humanIdentifier, historyJSON) => {
     let text = "";
     console.log("history to text");
@@ -137,7 +129,7 @@ const Conversation = ({ type }) => {
     return text;
   };
 
-  // Main message
+  // Generate bot response after user submits message
   const handleMessageSubmit = (e) => {
     setSelectedBackchannel("");
     setIsTyping(false);
@@ -180,7 +172,7 @@ const Conversation = ({ type }) => {
     }
   };
 
-  // Backchannel
+  // Generate backchannel while user types
   const handleMessageChange = async (e) => {
     const message = e.target.value;
     setInputValue(message);
@@ -221,13 +213,6 @@ const Conversation = ({ type }) => {
       }
     }
   };
-
-  useEffect(() => {
-    // Update emojiForMood based on the value of convo.reaction
-    console.log(convo.reaction);
-    const selectedEmoji = moodToEmojiMapping[convo.reaction] || "."; // Default to a question mark if mood is not found
-    setSelectedEmoji(selectedEmoji);
-  }, [convo.reaction]);
 
   return (
     <div className="conversation">
