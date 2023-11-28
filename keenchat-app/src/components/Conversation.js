@@ -238,21 +238,7 @@ const Conversation = ({ type }) => {
         ))}
       </div>
 
-      <div>
-        <audio id="audioElement" controls style={{ display: "none" }}>
-          <source src="" type="audio/mpeg" />
-        </audio>
-        <img src={isTyping ? bot_listen : bot_talk} id="bot_avatar_img" />
-        <span>Bot </span>
-        <div className="backchannel_container" style={{ marginLeft: "20px" }}>
-          <p style={{ display: "inline" }}>{selectedBackchannel}</p>
-          <p style={{ display: "inline", fontStyle: "normal" }}>
-            {selectedEmoji}
-          </p>
-        </div>
-      </div>
-
-      <div>
+      <div className="convo-reaction">
         {type && convo.reaction !== "" && (
           <ReactionEmoji reaction={convo.reaction} type={type} />
         )}
