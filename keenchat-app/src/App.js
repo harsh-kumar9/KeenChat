@@ -18,27 +18,73 @@ function App() {
           <Route path="/" element={<Conversation />} />
           <Route
             path="/voice-voice"
-            element={<Conversation main="voice" backchannelType="voice" />}
+            element={
+              <Conversation
+                main="voice"
+                backchannelType="voice"
+                inputType="text"
+              />
+            }
           />
           <Route
             path="/voice-text"
-            element={<Conversation main="voice" backchannelType="text" />}
+            element={
+              <Conversation
+                main="voice"
+                backchannelType="text"
+                inputType="text"
+              />
+            }
           />
           <Route
             path="/voice-none"
-            element={<Conversation main="voice" backchannelType="none" />}
+            element={
+              <Conversation
+                main="voice"
+                backchannelType="none"
+                inputType="text"
+              />
+            }
           />
           <Route
             path="/text-voice"
-            element={<Conversation main="text" backchannelType="voice" />}
+            element={
+              <Conversation
+                main="text"
+                backchannelType="voice"
+                inputType="text"
+              />
+            }
           />
           <Route
             path="/text-text"
-            element={<Conversation main="text" backchannelType="text" />}
+            element={
+              <Conversation
+                main="text"
+                backchannelType="text"
+                inputType="text"
+              />
+            }
           />
           <Route
             path="/text-none"
-            element={<Conversation main="text" backchannelType="none" />}
+            element={
+              <Conversation
+                main="text"
+                backchannelType="none"
+                inputType="text"
+              />
+            }
+          />
+          <Route
+            path="/all-voice"
+            element={
+              <Conversation
+                main="voice"
+                backchannelType="voice"
+                inputType="voice"
+              />
+            }
           />
         </Routes>
       </Router>
