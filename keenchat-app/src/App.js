@@ -1,15 +1,14 @@
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 
 import Conversation from "./components/Conversation";
-import AudioComponent from "./components/AudioComponent";
 
 // 6 routes for 6 different conversation types
-// 1. voice-voice: voice bot message, voice bot backchannel
-// 2. voice-text: voice bot message, text bot backchannel
-// 3. voice-none: voice bot message, no backchannel
-// 4. text-voice: text bot message, voice bot backchannel
-// 5. text-text: text bot message, text bot backchannel
-// 6. text-none: text bot message, no backchannel
+// 1. voice-voice: voice bot message, voice bot backchannelType
+// 2. voice-text: voice bot message, text bot backchannelType
+// 3. voice-none: voice bot message, no backchannelType
+// 4. text-voice: text bot message, voice bot backchannelType
+// 5. text-text: text bot message, text bot backchannelType
+// 6. text-none: text bot message, no backchannelType
 
 function App() {
   return (
@@ -19,27 +18,27 @@ function App() {
           <Route path="/" element={<Conversation />} />
           <Route
             path="/voice-voice"
-            element={<Conversation main="voice" backchannel="voice" />}
+            element={<Conversation main="voice" backchannelType="voice" />}
           />
           <Route
             path="/voice-text"
-            element={<Conversation tmain="voice" backchannel="text" />}
+            element={<Conversation main="voice" backchannelType="text" />}
           />
           <Route
             path="/voice-none"
-            element={<Conversation tmain="voice" backchannel="none" />}
+            element={<Conversation main="voice" backchannelType="none" />}
           />
           <Route
             path="/text-voice"
-            element={<Conversation tmain="text" backchannel="voice" />}
+            element={<Conversation main="text" backchannelType="voice" />}
           />
           <Route
             path="/text-text"
-            element={<Conversation main="text" backchannel="text" />}
+            element={<Conversation main="text" backchannelType="text" />}
           />
           <Route
             path="/text-none"
-            element={<Conversation main="text" backchannel="none" />}
+            element={<Conversation main="text" backchannelType="none" />}
           />
         </Routes>
       </Router>

@@ -20,20 +20,17 @@ var serviceRegion = "eastus"; // e.g., "westus"
 // Conversation component
 // main: "voice" or "text"
 // backchannel: "voice", "text", or "none"
-const Conversation = ({ main, backchannel }) => {
+const Conversation = ({ main, backchannelType }) => {
   // global states
   const dispatch = useDispatch();
   const langchain = useSelector((state) => state.langchain);
   const convo = useSelector((state) => state.convo);
-  const emoji = useSelector((state) => state.emoji);
 
   // local states
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [selectedBackchannel, setSelectedBackchannel] = useState("");
   const [selectedEmoji, setSelectedEmoji] = useState("");
-  const [sourceUrl, setSourceUrl] = useState(null);
-  const [voiceBackchannel, setVoiceBackchannel] = useState("hello");
   const [synthesizer, setSynthesizer] = useState(null);
 
   // constants
@@ -184,12 +181,13 @@ const Conversation = ({ main, backchannel }) => {
       dispatch(react(inputJSON));
 
       // handle backchannel
-      if (backchannel != "none") {
+      if (backchannelType != "none") {
         const msgLength = message.length;
-        const msgInterval = 7;
+        const msgInterval = 7; // number of characters between backchannels
+        const msgProbability = 0.5; // probability of generating backchannel
         const randBinary = Math.random();
-
-        if ((msgLength % msgInterval == 0) & (randBinary < 0.4)) {
+        console.log("randBinary: " + randBinary);
+        if ((msgLength % msgInterval == 0) & (randBinary < msgProbability)) {
           // Select a random backchannel from the backchannels array
           // const backchannel =
           //   backchannels[Math.floor(Math.random() * backchannels.length)];
@@ -197,21 +195,20 @@ const Conversation = ({ main, backchannel }) => {
           const backchannel = backchannels[randomIndex];
           const backchannelText = `${backchannel}...`;
           setSelectedBackchannel(backchannelText);
-          setVoiceBackchannel(backchannel);
 
+          // text-to-speech
+          if (backchannelType == "voice") {
+            synthesizeSpeech(backchannel);
+          }
           // Use setInterval to update the backchannel one letter at a time
           let index = 0;
           const backchannelInterval = setInterval(() => {
             setSelectedBackchannel(backchannelText.slice(0, index));
             index++;
-            // When the backchannel is fully shown, clear the interval
             if (index > backchannelText.length) {
               clearInterval(backchannelInterval);
             }
           }, 100);
-          if (main === "voice") {
-            synthesizeSpeech(backchannel);
-          }
         }
       }
     }
@@ -241,7 +238,25 @@ const Conversation = ({ main, backchannel }) => {
         ))}
       </div>
 
-      <form onSubmit={handleMessageSubmit} className="message-form">
+      <div className="bot-avatar-backchannel">
+        <img src={isTyping ? bot_listen : bot_talk} id="bot_avatar_img" />
+        <span>Bot </span>
+
+        {backchannelType === "text" ? (
+          <div className="backchannel_container" style={{ marginLeft: "20px" }}>
+            <p style={{ display: "inline" }}>{selectedBackchannel}</p>
+            <p style={{ display: "inline", fontStyle: "normal" }}>
+              {selectedEmoji}
+            </p>
+          </div>
+        ) : null}
+      </div>
+
+      <form
+        onSubmit={handleMessageSubmit}
+        className="message-form"
+        style={{ marginTop: "20px" }}
+      >
         <TextField
           value={inputValue}
           onChange={handleMessageChange}
