@@ -18,26 +18,16 @@ var subscriptionKey = "86be001229f24a638dd9ccfc0b443de5";
 var serviceRegion = "eastus"; // e.g., "westus"
 
 // Conversation component
-// type: none, static, animated
-const Conversation = ({ type }) => {
-  const backchannels = [
-    "yeah",
-    "oh",
-    "ah",
-    "hmm",
-    "mhm",
-    "I see",
-    "okay",
-    "uh huh",
-    "huh",
-    "uh",
-  ];
-  const dispatch = useDispatch();
-
+// main: "voice" or "text"
+// backchannel: "voice", "text", or "none"
+const Conversation = ({ main, backchannel }) => {
   // global states
+  const dispatch = useDispatch();
   const langchain = useSelector((state) => state.langchain);
   const convo = useSelector((state) => state.convo);
   const emoji = useSelector((state) => state.emoji);
+
+  // local states
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [selectedBackchannel, setSelectedBackchannel] = useState("");
@@ -45,6 +35,8 @@ const Conversation = ({ type }) => {
   const [sourceUrl, setSourceUrl] = useState(null);
   const [voiceBackchannel, setVoiceBackchannel] = useState("hello");
   const [synthesizer, setSynthesizer] = useState(null);
+
+  // constants
   const moodToEmojiMapping = {
     confusion: "😕",
     anger: "😡",
@@ -57,6 +49,18 @@ const Conversation = ({ type }) => {
     disapproval: "😕",
     disgust: "😢",
   };
+  const backchannels = [
+    "yeah",
+    "oh",
+    "ah",
+    "hmm",
+    "mhm",
+    "I see",
+    "okay",
+    "uh huh",
+    "huh",
+    "uh",
+  ];
 
   // Update emojiForMood based on the value of convo.reaction
   useEffect(() => {
@@ -134,6 +138,7 @@ const Conversation = ({ type }) => {
     setSelectedBackchannel("");
     setIsTyping(false);
     e.preventDefault();
+
     if (inputValue.trim() !== "") {
       const inputJSON = JSON.parse(JSON.stringify(langchain.inputJSON));
       inputJSON.chat_history += historyToText(
@@ -142,11 +147,6 @@ const Conversation = ({ type }) => {
         langchain.history
       );
       inputJSON.inputs = inputValue;
-
-      // set emoji
-      if (type) {
-        dispatch(emojiActions.reset());
-      }
 
       // dispatch convo reset
       dispatch(convoActions.reset());
@@ -160,14 +160,13 @@ const Conversation = ({ type }) => {
           inputJSON
         )
       ).then((botResponse) => {
-        // Access the bot's response from the state or wherever it is stored
-        // console.log(langchain);
-        // const botResponse = langchain.botResponse; // Replace with the actual state structure
-
-        synthesizeSpeech(botResponse["text"]);
-
         // reset input value to empty
         setInputValue("");
+
+        // text-to-speech
+        if (main === "voice") {
+          synthesizeSpeech(botResponse["text"]);
+        }
       });
     }
   };
@@ -185,31 +184,35 @@ const Conversation = ({ type }) => {
       dispatch(react(inputJSON));
 
       // handle backchannel
-      const msgLength = message.length;
-      const randBinary = Math.random();
-      const msgInterval = 7;
-      if ((msgLength % msgInterval == 0) & (randBinary < 0.4)) {
-        // Select a random backchannel from the backchannels array
-        // const backchannel =
-        //   backchannels[Math.floor(Math.random() * backchannels.length)];
-        const randomIndex = Math.floor(Math.random() * backchannels.length);
-        const backchannel = backchannels[randomIndex];
-        const backchannelText = `${backchannel}...`;
-        setSelectedBackchannel(backchannelText);
-        setVoiceBackchannel(backchannel);
+      if (backchannel != "none") {
+        const msgLength = message.length;
+        const msgInterval = 7;
+        const randBinary = Math.random();
 
-        // Use setInterval to update the backchannel one letter at a time
-        let index = 0;
-        const backchannelInterval = setInterval(() => {
-          setSelectedBackchannel(backchannelText.slice(0, index));
-          index++;
-          // When the backchannel is fully shown, clear the interval
-          if (index > backchannelText.length) {
-            clearInterval(backchannelInterval);
+        if ((msgLength % msgInterval == 0) & (randBinary < 0.4)) {
+          // Select a random backchannel from the backchannels array
+          // const backchannel =
+          //   backchannels[Math.floor(Math.random() * backchannels.length)];
+          const randomIndex = Math.floor(Math.random() * backchannels.length);
+          const backchannel = backchannels[randomIndex];
+          const backchannelText = `${backchannel}...`;
+          setSelectedBackchannel(backchannelText);
+          setVoiceBackchannel(backchannel);
+
+          // Use setInterval to update the backchannel one letter at a time
+          let index = 0;
+          const backchannelInterval = setInterval(() => {
+            setSelectedBackchannel(backchannelText.slice(0, index));
+            index++;
+            // When the backchannel is fully shown, clear the interval
+            if (index > backchannelText.length) {
+              clearInterval(backchannelInterval);
+            }
+          }, 100);
+          if (main === "voice") {
+            synthesizeSpeech(backchannel);
           }
-        }, 100);
-        // fetchAndUpdateAudioData(backchannel);
-        synthesizeSpeech(backchannel);
+        }
       }
     }
   };
@@ -236,13 +239,6 @@ const Conversation = ({ type }) => {
             </div>
           </div>
         ))}
-      </div>
-
-      <div className="convo-reaction">
-        {type && convo.reaction !== "" && (
-          <ReactionEmoji reaction={convo.reaction} type={type} />
-        )}
-        {/* <p>{convo.reaction}</p> */}
       </div>
 
       <form onSubmit={handleMessageSubmit} className="message-form">

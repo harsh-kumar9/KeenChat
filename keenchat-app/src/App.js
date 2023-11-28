@@ -19,27 +19,27 @@ function App() {
           <Route path="/" element={<Conversation />} />
           <Route
             path="/voice-voice"
-            element={<Conversation type="voice-voice" />}
+            element={<Conversation main="voice" backchannel="voice" />}
           />
           <Route
             path="/voice-text"
-            element={<Conversation type="voice-text" />}
+            element={<Conversation tmain="voice" backchannel="text" />}
           />
           <Route
             path="/voice-none"
-            element={<Conversation type="voice-none" />}
+            element={<Conversation tmain="voice" backchannel="none" />}
           />
           <Route
             path="/text-voice"
-            element={<Conversation type="text-voice" />}
+            element={<Conversation tmain="text" backchannel="voice" />}
           />
           <Route
             path="/text-text"
-            element={<Conversation type="text-text" />}
+            element={<Conversation main="text" backchannel="text" />}
           />
           <Route
             path="/text-none"
-            element={<Conversation type="text-none" />}
+            element={<Conversation main="text" backchannel="none" />}
           />
         </Routes>
       </Router>
