@@ -12,6 +12,13 @@ import bot_talk from "../assets/bot-talk.png";
 import bot_listen from "../assets/bot-listen.png";
 import { OpenAIApi } from "openai";
 import axios from "axios";
+import * as sdk from "microsoft-cognitiveservices-speech-sdk";
+
+// replace with your own subscription key,
+// service region (e.g., "westus"), and
+// the name of the file you save the synthesized audio.
+var subscriptionKey = "86be001229f24a638dd9ccfc0b443de5";
+var serviceRegion = "eastus"; // e.g., "westus"
 
 // const { OpenAIApi } = require("openai");
 // const client = new OpenAIApi({
@@ -22,7 +29,6 @@ const openai = new OpenAIApi(process.env.REACT_APP_OPENAI_API_TOKEN);
 // Conversation component
 // type: none, static, animated
 const Conversation = ({ type }) => {
-  // dispatch function
   const backchannels = [
     "yeah",
     "oh",
@@ -48,6 +54,53 @@ const Conversation = ({ type }) => {
   const [selectedEmoji, setSelectedEmoji] = useState("");
   const [sourceUrl, setSourceUrl] = useState(null);
   const [voiceBackchannel, setVoiceBackchannel] = useState("hello");
+  // we are done with the setup
+
+  // Define state for synthesizer to manage its lifecycle
+  const [synthesizer, setSynthesizer] = useState(null);
+
+  // useEffect hook to instantiate and dispose of the synthesizer
+  useEffect(() => {
+    // Instantiate the synthesizer
+    const speechConfig = sdk.SpeechConfig.fromSubscription(
+      subscriptionKey,
+      serviceRegion
+    );
+    const audioConfig = sdk.AudioConfig.fromSpeakerOutput();
+    const newSynthesizer = new sdk.SpeechSynthesizer(speechConfig, audioConfig);
+
+    // Set the synthesizer in state
+    setSynthesizer(newSynthesizer);
+
+    // Cleanup function to dispose of the synthesizer when the component unmounts
+    return () => {
+      if (newSynthesizer) {
+        newSynthesizer.close();
+      }
+    };
+  }, []);
+
+  const synthesizeSpeech = (text) => {
+    if (synthesizer) {
+      synthesizer.speakTextAsync(
+        text,
+        (result) => {
+          if (result.reason === sdk.ResultReason.SynthesizingAudioCompleted) {
+            console.log("Speech synthesis completed.");
+          } else {
+            console.error("Speech synthesis canceled, " + result.errorDetails);
+          }
+          // Do not close the synthesizer here
+        },
+        (err) => {
+          console.error("Error occurred during speech synthesis: " + err);
+          // Do not close the synthesizer here
+        }
+      );
+    } else {
+      console.error("Synthesizer not initialized.");
+    }
+  };
 
   // confusion, anger, neutral, sadness, joy, admiration, fear, nervousness
   const moodToEmojiMapping = {
@@ -84,7 +137,7 @@ const Conversation = ({ type }) => {
     return text;
   };
 
-  // handle message submit (add to chat history)
+  // Main message
   const handleMessageSubmit = (e) => {
     setSelectedBackchannel("");
     setIsTyping(false);
@@ -119,7 +172,7 @@ const Conversation = ({ type }) => {
         // console.log(langchain);
         // const botResponse = langchain.botResponse; // Replace with the actual state structure
 
-        fetchAndUpdateAudioData(botResponse["text"]);
+        synthesizeSpeech(botResponse["text"]);
 
         // reset input value to empty
         setInputValue("");
@@ -127,7 +180,7 @@ const Conversation = ({ type }) => {
     }
   };
 
-  // handle message change (input value)
+  // Backchannel
   const handleMessageChange = async (e) => {
     const message = e.target.value;
     setInputValue(message);
@@ -163,79 +216,11 @@ const Conversation = ({ type }) => {
             clearInterval(backchannelInterval);
           }
         }, 100);
-        fetchAndUpdateAudioData(backchannel);
+        // fetchAndUpdateAudioData(backchannel);
+        synthesizeSpeech(backchannel);
       }
     }
   };
-
-  // Function to convert text to audio using ElevenLabs API
-  const convertTextToAudio = async (textToConvert) => {
-    // Set the API key for ElevenLabs API
-    const apiKey = "5e8fc541c60a889eb2548d69bbdc94d8";
-
-    // ID of voice to be used for speech
-    // const voiceId = "21m00Tcm4TlvDq8ikWAM";
-    // const voiceId = "LcfcDJNUP1GQjkzn1xUU";
-    const voiceId = "onwK4e9ZLuTAKqWW03F9";
-
-    // API request options
-    const apiRequestOptions = {
-      method: "POST",
-      url: `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
-      headers: {
-        accept: "audio/mpeg",
-        "content-type": "application/json",
-        "xi-api-key": apiKey,
-      },
-      data: {
-        text: textToConvert,
-      },
-      responseType: "arraybuffer", // To receive binary data in response
-    };
-
-    // Sending the API request and waiting for response
-    const apiResponse = await axios.request(apiRequestOptions);
-
-    // Return the binary audio data received from API
-    return apiResponse.data;
-  };
-
-  // Asynchronous function to fetch audio data and update state variable
-  const fetchAndUpdateAudioData = async (textToConvert) => {
-    console.log(textToConvert);
-    const audioData = await convertTextToAudio(textToConvert);
-    const audioBlob = new Blob([audioData], { type: "audio/mpeg" });
-    const blobUrl = URL.createObjectURL(audioBlob);
-
-    const audioElement = document.getElementById("audioElement");
-    if (audioElement && blobUrl) {
-      // Start audio playback programmatically
-      audioElement.src = blobUrl;
-      audioElement.load();
-      audioElement.play();
-    }
-  };
-
-  // const speakBackchannel = async (text) => {
-  //   console.log("Speaking backchannel");
-  //   // console.log(client);
-  //   console.log("Printing openai");
-  //   console.log(openai);
-  //   try {
-  //     console.log("Trying to create audio");
-  //     const mp3 = await openai.audio.speech.create({
-  //       model: "tts-1",
-  //       voice: "alloy",
-  //       input: text,
-  //     });
-
-  //     const buffer = Buffer.from(await mp3.arrayBuffer());
-  //     const audioElement = new Audio(URL.createObjectURL(new Blob([buffer])));
-  //     audioElement.play();
-  //   } catch (error) {
-  //     console.error("Error in TTS service:", error);
-  //   }
-  // };
 
   useEffect(() => {
     // Update emojiForMood based on the value of convo.reaction
