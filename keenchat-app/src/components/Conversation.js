@@ -14,7 +14,7 @@ import { OpenAIApi } from "openai";
 import * as sdk from "microsoft-cognitiveservices-speech-sdk";
 
 // Azure Speech Services credentials
-var subscriptionKey = "86be001229f24a638dd9ccfc0b443de5";
+var subscriptionKey = "Subscription key here";
 var serviceRegion = "eastus"; // e.g., "westus"
 
 // Conversation component
