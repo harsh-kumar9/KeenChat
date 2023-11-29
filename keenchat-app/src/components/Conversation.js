@@ -14,8 +14,8 @@ import { OpenAIApi } from "openai";
 import * as sdk from "microsoft-cognitiveservices-speech-sdk";
 
 // Azure Speech Services credentials
-var subscriptionKey = "86be001229f24a638dd9ccfc0b443de5";
-var serviceRegion = "eastus"; // e.g., "westus"
+var subscriptionKey = process.env.REACT_APP_AZURE_SPEECH_KEY;
+var serviceRegion = process.env.REACT_APP_AZURE_SPEECH_REGION; // e.g., "westus"
 
 // Conversation component
 // main: "voice" or "text"
@@ -33,6 +33,7 @@ const Conversation = ({ main, backchannelType, inputType }) => {
   const [selectedBackchannel, setSelectedBackchannel] = useState("");
   const [selectedEmoji, setSelectedEmoji] = useState("");
   const [synthesizer, setSynthesizer] = useState(null);
+  const [userInput, setUserInput] = useState("");
 
   // constants
   const moodToEmojiMapping = {
@@ -67,9 +68,113 @@ const Conversation = ({ main, backchannelType, inputType }) => {
     setSelectedEmoji(selectedEmoji);
   }, [convo.reaction]);
 
+  // Speech recognition
+  const [recognizer, setRecognizer] = useState(null); // State to store the recognizer
+  const [isListening, setIsListening] = useState(false); // State to track if currently listening
+
+  // Function to initialize and start speech recognition
+  const startContinuousSpeechRecognition = () => {
+    const speechConfig = sdk.SpeechConfig.fromSubscription(
+      subscriptionKey,
+      serviceRegion
+    );
+    speechConfig.speechRecognitionLanguage = "en-US";
+    const audioConfig = sdk.AudioConfig.fromDefaultMicrophoneInput();
+    const newRecognizer = new sdk.SpeechRecognizer(speechConfig, audioConfig);
+
+    // Attach event listener for real-time speech recognition results
+    newRecognizer.recognizing = (s, e) => {
+      console.log(`RECOGNIZING: Text=${e.result.text}`);
+    };
+
+    newRecognizer.recognized = (s, e) => {
+      if (e.result.reason === sdk.ResultReason.RecognizedSpeech) {
+        console.log(`RECOGNIZED final: Text=${e.result.text}`);
+        setInputValue(e.result.text); // Final update to inputValue
+      }
+    };
+
+    // Start continuous recognition
+    newRecognizer.startContinuousRecognitionAsync();
+    setRecognizer(newRecognizer);
+    setIsListening(true);
+  };
+
+  // Function to stop speech recognition
+  const stopContinuousSpeechRecognition = () => {
+    if (recognizer) {
+      // Set a timeout to delay the stop function
+      recognizer.stopContinuousRecognitionAsync(
+        () => {
+          console.log("Recognition stopped");
+          setIsListening(false);
+          processMessage(); // Process the final message
+        },
+        (error) => {
+          console.error("Error stopping recognition:", error);
+        }
+      );
+      setRecognizer(null);
+    }
+  };
+
+  const toggleContinuousSpeechRecognition = () => {
+    if (isListening) {
+      // TODO: doesn't work if user stops listening before speech is recognized
+      // ie. need to wait ~0.5s after you stop talking before you can press "stop listening"
+      // how to make sure speech is recognized before stopping?
+      console.log("stopping speech recognition");
+      stopContinuousSpeechRecognition();
+    } else {
+      console.log("starting speech recognition");
+      startContinuousSpeechRecognition();
+    }
+  };
+  // Function to initialize and start speech recognition
+  const startSpeechRecognition = () => {
+    const speechConfig = sdk.SpeechConfig.fromSubscription(
+      subscriptionKey,
+      serviceRegion
+    );
+    speechConfig.speechRecognitionLanguage = "en-US";
+    const audioConfig = sdk.AudioConfig.fromDefaultMicrophoneInput();
+    const newRecognizer = new sdk.SpeechRecognizer(speechConfig, audioConfig);
+
+    newRecognizer.recognizeOnceAsync((result) => {
+      if (result.reason === sdk.ResultReason.RecognizedSpeech) {
+        setUserInput(result.text);
+        console.log("RECOGNIZED: Text=" + result.text);
+      } else {
+        console.log("ERROR: Speech was cancelled or could not be recognized.");
+      }
+      stopSpeechRecognition(); // Stop listening after speech is recognized
+    });
+
+    setRecognizer(newRecognizer);
+    setIsListening(true);
+  };
+
+  // Function to stop speech recognition
+  const stopSpeechRecognition = () => {
+    if (recognizer) {
+      recognizer.stopContinuousRecognitionAsync();
+      setIsListening(false);
+    }
+  };
+  // Toggle function for starting/stopping speech recognition
+  const toggleSpeechRecognition = () => {
+    if (isListening) {
+      console.log("stopping speech recognition");
+      stopSpeechRecognition();
+      processMessage();
+    } else {
+      console.log("starting speech recognition");
+      startSpeechRecognition();
+    }
+  };
+
   // Synthesizer for TTS (text-to-speech)
   useEffect(() => {
-    // Instantiate the synthesizer
     const speechConfig = sdk.SpeechConfig.fromSubscription(
       subscriptionKey,
       serviceRegion
@@ -131,12 +236,7 @@ const Conversation = ({ main, backchannelType, inputType }) => {
     return text;
   };
 
-  // Generate bot response after user submits message
-  const handleMessageSubmit = (e) => {
-    setSelectedBackchannel("");
-    setIsTyping(false);
-    e.preventDefault();
-
+  const processMessage = () => {
     if (inputValue.trim() !== "") {
       const inputJSON = JSON.parse(JSON.stringify(langchain.inputJSON));
       inputJSON.chat_history += historyToText(
@@ -167,6 +267,13 @@ const Conversation = ({ main, backchannelType, inputType }) => {
         }
       });
     }
+  };
+  // Generate bot response after user submits message
+  const handleMessageSubmit = (e) => {
+    setSelectedBackchannel("");
+    setIsTyping(false);
+    e.preventDefault();
+    processMessage();
   };
 
   // Generate backchannel while user types
@@ -253,22 +360,31 @@ const Conversation = ({ main, backchannelType, inputType }) => {
         ) : null}
       </div>
 
-      <form
-        onSubmit={handleMessageSubmit}
-        className="message-form"
-        style={{ marginTop: "20px" }}
-      >
-        <TextField
-          value={inputValue}
-          onChange={handleMessageChange}
-          label="Type a message"
-          className="message-input"
-          autoComplete="off"
-        />
-        <Button type="submit" variant="contained" className="send-button">
-          Send
+      {inputType === "text" ? (
+        <form
+          onSubmit={handleMessageSubmit}
+          className="message-form"
+          style={{ marginTop: "20px" }}
+        >
+          <TextField
+            value={inputValue}
+            onChange={handleMessageChange}
+            label="Type a message"
+            className="message-input"
+            autoComplete="off"
+          />
+          <Button type="submit" variant="contained" className="send-button">
+            Send
+          </Button>
+        </form>
+      ) : (
+        <Button
+          className="voice-input-button"
+          onClick={toggleContinuousSpeechRecognition}
+        >
+          {isListening ? "Stop Listening" : "Start Listening"}
         </Button>
-      </form>
+      )}
     </div>
   );
 };
