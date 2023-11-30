@@ -85,6 +85,9 @@ const Conversation = ({ main, backchannelType, inputType }) => {
     // Attach event listener for real-time speech recognition results
     newRecognizer.recognizing = (s, e) => {
       console.log(`RECOGNIZING: Text=${e.result.text}`);
+      if (backchannelType === "voice") {
+        generateBackchannel(e.result.text, 3, 1);
+      }
     };
 
     newRecognizer.recognized = (s, e) => {
@@ -289,35 +292,42 @@ const Conversation = ({ main, backchannelType, inputType }) => {
       dispatch(react(inputJSON));
 
       // handle backchannel
-      if (backchannelType != "none") {
-        const msgLength = message.length;
-        const msgInterval = 7; // number of characters between backchannels
-        const msgProbability = 0.5; // probability of generating backchannel
-        const randBinary = Math.random();
-        console.log("randBinary: " + randBinary);
-        if ((msgLength % msgInterval == 0) & (randBinary < msgProbability)) {
-          // Select a random backchannel from the backchannels array
-          // const backchannel =
-          //   backchannels[Math.floor(Math.random() * backchannels.length)];
-          const randomIndex = Math.floor(Math.random() * backchannels.length);
-          const backchannel = backchannels[randomIndex];
-          const backchannelText = `${backchannel}...`;
-          setSelectedBackchannel(backchannelText);
+      generateBackchannel(message);
+    }
+  };
 
-          // text-to-speech
-          if (backchannelType == "voice") {
-            synthesizeSpeech(backchannel);
-          }
-          // Use setInterval to update the backchannel one letter at a time
-          let index = 0;
-          const backchannelInterval = setInterval(() => {
-            setSelectedBackchannel(backchannelText.slice(0, index));
-            index++;
-            if (index > backchannelText.length) {
-              clearInterval(backchannelInterval);
-            }
-          }, 100);
+  const generateBackchannel = (
+    message,
+    msgInterval = 7,
+    msgProbability = 0.5
+  ) => {
+    console.log("checking for backchannel...");
+    if (backchannelType != "none") {
+      const msgLength = message.length;
+      const randBinary = Math.random();
+      if ((msgLength % msgInterval == 0) & (randBinary < msgProbability)) {
+        // Select a random backchannel from the backchannels array
+        // const backchannel =
+        //   backchannels[Math.floor(Math.random() * backchannels.length)];
+        const randomIndex = Math.floor(Math.random() * backchannels.length);
+        const backchannel = backchannels[randomIndex];
+        const backchannelText = `${backchannel}...`;
+        setSelectedBackchannel(backchannelText);
+        console.log("backchannel: " + backchannel);
+
+        // text-to-speech
+        if (backchannelType == "voice") {
+          synthesizeSpeech(backchannel);
         }
+        // Use setInterval to update the backchannel one letter at a time
+        let index = 0;
+        const backchannelInterval = setInterval(() => {
+          setSelectedBackchannel(backchannelText.slice(0, index));
+          index++;
+          if (index > backchannelText.length) {
+            clearInterval(backchannelInterval);
+          }
+        }, 100);
       }
     }
   };
