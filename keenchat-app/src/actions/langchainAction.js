@@ -6,6 +6,7 @@ import { HuggingFaceInference } from "langchain/llms/hf";
 import { PromptTemplate } from "langchain/prompts";
 import { LLMChain } from "langchain/chains";
 
+// Model
 const model = new OpenAI({
   model: "gpt-3.5-turbo-0613",
   openAIApiKey: process.env.REACT_APP_OPENAI_API_TOKEN,
@@ -20,6 +21,16 @@ const model = new OpenAI({
 
 const back_channel_model_name = "SamLowe/roberta-base-go_emotions";
 
+/**
+ * Dispatches an asynchronous action to handle user input and generate responses.
+ *
+ * @param {string} promptTemplate - The template for generating prompts.
+ * @param {string} botIdentifier - Identifier for the bot in the conversation.
+ * @param {string} humanIdentifier - Identifier for the human in the conversation.
+ * @param {Object} inputJSON - The input data in JSON format.
+ * @returns {Function} An asynchronous function that dispatches actions based on language model responses.
+ */
+
 export const ask = (
   promptTemplate,
   botIdentifier,
@@ -27,14 +38,18 @@ export const ask = (
   inputJSON
 ) => {
   return async (dispatch) => {
+    // create prompt template
     const prompt = PromptTemplate.fromTemplate(promptTemplate);
+
+    // create chain using prompt template
     const chain = new LLMChain({ llm: model, prompt });
 
+    // call chain
     const res = await chain.call(inputJSON, [
       {
         handleChainStart(chain) {
           //   console.log("new chain");
-          //   console.log(chain);
+          //   console.logl(chain);
           const history = {};
           history[humanIdentifier] = inputJSON.inputs;
           dispatch(langchainActions.pushHistory({ history }));
@@ -57,10 +72,11 @@ export const ask = (
       },
     ]);
 
-    // console.log(res);
+    return res;
   };
 };
 
+// Generate reactions based on input
 export const react = (inputJSON) => {
   return async (dispatch) => {
     // const res = await back_channel_model.call(JSON.stringify(inputJSON));
