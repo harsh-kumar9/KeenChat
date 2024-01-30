@@ -1,21 +1,51 @@
 import React, { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
-
 import { convoActions } from "../reducers/convoSlice";
 import { emojiActions } from "../reducers/emojiSlice";
 import { ask, react } from "../actions/langchainAction";
-import "../styles/Conversation.css";
-
 import { TextField, Button } from "@mui/material";
 import ReactionEmoji from "./ReactionEmoji";
 import bot_talk from "../assets/bot-talk.png";
 import bot_listen from "../assets/bot-listen.png";
-import { OpenAIApi } from "openai";
+// import OpenAI from "openai";
 import * as sdk from "microsoft-cognitiveservices-speech-sdk";
+import "../styles/Conversation.css";
 
-// Azure Speech Services credentials
+// SETUP OPENAI
+const { OpenAIClient } = require("openai");
+const { InteractiveBrowserCredential } = require("@azure/identity");
+
+// const OpenAIClient = require("@azure/openai");
+// const { AzureKeyCredential } = require("@azure/core-auth");
+const endpoint = process.env.REACT_APP_AZURE_OPENAI_ENDPOINT;
+const azureApiKey = process.env.REACT_APP_AZURE_OPENAI_KEY;
+const tenantID = process.env.REACT_APP_AZURE_TENANT_ID;
+const clientID = process.env.REACT_APP_AZURE_CLIENT_ID;
+const credential = new InteractiveBrowserCredential({
+  clientId: clientID,
+  tenantId: tenantID,
+  redirectUri: "http://localhost:3000/Keenchat",
+});
+const client = new OpenAIClient(endpoint, credential);
+console.log("client: " + client);
+const deploymentId = "backchannel";
+
 var subscriptionKey = process.env.REACT_APP_AZURE_SPEECH_KEY;
 var serviceRegion = process.env.REACT_APP_AZURE_SPEECH_REGION; // e.g., "westus"
+
+const messages = [
+  {
+    role: "system",
+    content:
+      "Based on the conversation context provided by the user, select and generate a single-word backchannel response from this specific list: mhm, yeah, right, wow, okay, sure, hmm, uh-huh, gotcha, cool. These words are commonly used to indicate active listening and understanding in a conversation. Ensure that the chosen word is contextually appropriate, reflecting attentiveness or acknowledgment relevant to the specific part of the conversation provided. The response should consist solely of the selected backchannel word, without any additional content.",
+  },
+  { role: "assistant", content: "What happened?" },
+  {
+    role: "user",
+    content: "So I’ve always felt very scared",
+  },
+  { role: "assistant", content: "hmm" },
+];
 
 // Conversation component
 // main: "voice" or "text"
@@ -34,6 +64,7 @@ const Conversation = ({ main, backchannelType, inputType }) => {
   const [selectedEmoji, setSelectedEmoji] = useState("");
   const [synthesizer, setSynthesizer] = useState(null);
   const [userInput, setUserInput] = useState("");
+  const [conversationHistory, setConversationHistory] = useState([]);
 
   // constants
   const moodToEmojiMapping = {
@@ -61,18 +92,18 @@ const Conversation = ({ main, backchannelType, inputType }) => {
     "uh",
   ];
 
-  // Update emojiForMood based on the value of convo.reaction
+  // SENTIMENT  ANALYSIS
   useEffect(() => {
     console.log(convo.reaction);
     const selectedEmoji = moodToEmojiMapping[convo.reaction] || "."; // Default to a question mark if mood is not found
     setSelectedEmoji(selectedEmoji);
   }, [convo.reaction]);
 
-  // Speech recognition
+  // SPEECH RECOGNITION & TTS
   const [recognizer, setRecognizer] = useState(null); // State to store the recognizer
   const [isListening, setIsListening] = useState(false); // State to track if currently listening
 
-  // Function to initialize and start speech recognition
+  // Function to start speech recognition
   const startContinuousSpeechRecognition = () => {
     const speechConfig = sdk.SpeechConfig.fromSubscription(
       subscriptionKey,
@@ -133,48 +164,6 @@ const Conversation = ({ main, backchannelType, inputType }) => {
       startContinuousSpeechRecognition();
     }
   };
-  // Function to initialize and start speech recognition
-  const startSpeechRecognition = () => {
-    const speechConfig = sdk.SpeechConfig.fromSubscription(
-      subscriptionKey,
-      serviceRegion
-    );
-    speechConfig.speechRecognitionLanguage = "en-US";
-    const audioConfig = sdk.AudioConfig.fromDefaultMicrophoneInput();
-    const newRecognizer = new sdk.SpeechRecognizer(speechConfig, audioConfig);
-
-    newRecognizer.recognizeOnceAsync((result) => {
-      if (result.reason === sdk.ResultReason.RecognizedSpeech) {
-        setUserInput(result.text);
-        console.log("RECOGNIZED: Text=" + result.text);
-      } else {
-        console.log("ERROR: Speech was cancelled or could not be recognized.");
-      }
-      stopSpeechRecognition(); // Stop listening after speech is recognized
-    });
-
-    setRecognizer(newRecognizer);
-    setIsListening(true);
-  };
-
-  // Function to stop speech recognition
-  const stopSpeechRecognition = () => {
-    if (recognizer) {
-      recognizer.stopContinuousRecognitionAsync();
-      setIsListening(false);
-    }
-  };
-  // Toggle function for starting/stopping speech recognition
-  const toggleSpeechRecognition = () => {
-    if (isListening) {
-      console.log("stopping speech recognition");
-      stopSpeechRecognition();
-      processMessage();
-    } else {
-      console.log("starting speech recognition");
-      startSpeechRecognition();
-    }
-  };
 
   // Synthesizer for TTS (text-to-speech)
   useEffect(() => {
@@ -218,60 +207,21 @@ const Conversation = ({ main, backchannelType, inputType }) => {
     }
   };
 
-  // Get chat history from JSON
-  const historyToText = (botIdentifier, humanIdentifier, historyJSON) => {
-    let text = "";
-    console.log("history to text");
-    console.log(historyJSON);
-    let botMsg = "";
-    for (let i = 0; i < historyJSON.length; i++) {
-      // msg is by human
-      if (historyJSON[i][humanIdentifier].length > 0) {
-        text += `${humanIdentifier}: ` + historyJSON[i][humanIdentifier] + "\n";
-      }
-      // msg is by bot
-      if (historyJSON[i][botIdentifier].length > 0) {
-        botMsg = historyJSON[i][botIdentifier];
-        text += `${botIdentifier}: ` + botMsg + "\n";
-      }
-    }
-
-    return text;
-  };
-
-  const processMessage = () => {
+  // MAIN MESSAGE BOT
+  // Add user input to conversation history on submit
+  const processMessage = async () => {
     if (inputValue.trim() !== "") {
-      const inputJSON = JSON.parse(JSON.stringify(langchain.inputJSON));
-      inputJSON.chat_history += historyToText(
-        langchain.bot_identifier,
-        langchain.human_identifier,
-        langchain.history
-      );
-      inputJSON.inputs = inputValue;
+      // Append user input to conversation history
+      setConversationHistory((prevHistory) => [
+        ...prevHistory,
+        { role: "user", content: inputValue },
+      ]);
 
-      // dispatch convo reset
-      dispatch(convoActions.reset());
-
-      // get bot message
-      dispatch(
-        ask(
-          langchain.prompt,
-          langchain.bot_identifier,
-          langchain.human_identifier,
-          inputJSON
-        )
-      ).then((botResponse) => {
-        // reset input value to empty
-        setInputValue("");
-
-        // text-to-speech
-        if (main === "voice") {
-          synthesizeSpeech(botResponse["text"]);
-        }
-      });
+      // Reset input value to empty
+      setInputValue("");
     }
   };
-  // Generate bot response after user submits message
+
   const handleMessageSubmit = (e) => {
     setSelectedBackchannel("");
     setIsTyping(false);
@@ -279,20 +229,85 @@ const Conversation = ({ main, backchannelType, inputType }) => {
     processMessage();
   };
 
-  // Generate backchannel while user types
-  const handleMessageChange = async (e) => {
-    const message = e.target.value;
-    setInputValue(message);
-    setIsTyping(true);
+  // get bot response from gpt3.5 and add to conversation history
+  useEffect(() => {
+    // Function to get responses from OpenAI
+    const getOpenAIResponse = async () => {
+      try {
+        const deploymentId = "gpt-4";
+        const events = client.listChatCompletions(
+          deploymentId,
+          conversationHistory,
+          { maxTokens: 128 }
+        );
+        for await (const event of events) {
+          for (const choice of event.choices) {
+            const delta = choice.delta?.content;
+            if (delta !== undefined) {
+              // Update conversation history with the response from OpenAI
+              setConversationHistory((prevHistory) => [
+                ...prevHistory,
+                { role: "assistant", content: delta },
+              ]);
 
-    if (message === "") {
-      dispatch(convoActions.reset());
-    } else {
-      const inputJSON = { inputs: message };
-      dispatch(react(inputJSON));
+              // If the main is set to voice, synthesize the response
+              if (main === "voice") {
+                synthesizeSpeech(delta);
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Error in getting response from OpenAI:", err);
+      }
+    };
 
-      // handle backchannel
-      generateBackchannel(message);
+    // Only call OpenAI when the last message in history is from the user
+    if (
+      conversationHistory.length > 0 &&
+      conversationHistory[conversationHistory.length - 1].role === "user"
+    ) {
+      getOpenAIResponse();
+    }
+  }, [conversationHistory]);
+
+  // BACKCHANNEL BOT
+  // get backchannel from gpt3.5 and set as selected backchannel
+  const generateBackchannelBot = async (message) => {
+    console.log("checking for backchannel...");
+    if (backchannelType != "none") {
+      //TODO: generate backchannel from chatgpt
+      const messagesWithUser = messages.concat({
+        role: "user",
+        content: message,
+      });
+      const result = await client.getChatCompletions(
+        deploymentId,
+        messagesWithUser
+      );
+
+      for (const choice of result.choices) {
+        console.log("Results:");
+        console.log(choice.message);
+      }
+      const backchannel = backchannels[0];
+      const backchannelText = `${backchannel}...`;
+      setSelectedBackchannel(backchannelText);
+      console.log("backchannel: " + backchannel);
+
+      // text-to-speech
+      if (backchannelType == "voice") {
+        synthesizeSpeech(backchannel);
+      }
+      // Use setInterval to update the backchannel one letter at a time
+      let index = 0;
+      const backchannelInterval = setInterval(() => {
+        setSelectedBackchannel(backchannelText.slice(0, index));
+        index++;
+        if (index > backchannelText.length) {
+          clearInterval(backchannelInterval);
+        }
+      }, 100);
     }
   };
 
@@ -329,6 +344,17 @@ const Conversation = ({ main, backchannelType, inputType }) => {
           }
         }, 100);
       }
+    }
+  };
+
+  // check for backchannel after message change
+  const handleMessageChange = async (e) => {
+    const message = e.target.value;
+    setInputValue(message);
+    setIsTyping(true);
+
+    if (message.length > 5) {
+      generateBackchannelBot(message);
     }
   };
 
