@@ -1,17 +1,32 @@
 import { convoActions } from "../reducers/convoSlice";
 import { langchainActions } from "../reducers/langchainSlice";
-
-import { OpenAI } from "langchain/llms/openai";
+import { OpenAIChat } from "langchain/llms/openai";
 import { HuggingFaceInference } from "langchain/llms/hf";
 import { PromptTemplate } from "langchain/prompts";
 import { LLMChain } from "langchain/chains";
 
 // Model
-const model = new OpenAI({
-  model: "gpt-3.5-turbo-0613",
-  openAIApiKey: process.env.REACT_APP_OPENAI_API_TOKEN,
-  temperature: 0.9,
-  streaming: true,
+// const model = new OpenAI({
+//   model: "gpt-3.5-turbo-0613",
+//   openAIApiKey: process.env.REACT_APP_OPENAI_API_TOKEN,
+//   temperature: 0.9,
+//   streaming: true,
+// });
+
+const model = new OpenAIChat({
+  temperature: 0, // determine how stochastic we want it to be, 0 for experimentation
+  azureOpenAIApiKey: "ec79f9fb01954ecbaf4f727ff65ede2f",
+  azureOpenAIApiVersion: "2023-07-01-preview",
+  azureOpenAIApiInstanceName: "quickta-playground",
+  azureOpenAIApiDeploymentName: "GPT3_16k",
+});
+
+const back_channel_model = new OpenAIChat({
+  temperature: 0.5, // determine how stochastic we want it to be, 0 for experimentation
+  azureOpenAIApiKey: "ec79f9fb01954ecbaf4f727ff65ede2f",
+  azureOpenAIApiVersion: "2023-07-01-preview",
+  azureOpenAIApiInstanceName: "quickta-playground",
+  azureOpenAIApiDeploymentName: "GPT3_16k",
 });
 
 // const back_channel_model = new HuggingFaceInference({
@@ -30,6 +45,19 @@ const back_channel_model_name = "SamLowe/roberta-base-go_emotions";
  * @param {Object} inputJSON - The input data in JSON format.
  * @returns {Function} An asynchronous function that dispatches actions based on language model responses.
  */
+
+export const ask_backchannel = (prompt, message) => {
+  return async (dispatch) => {
+    const promptTemplate = PromptTemplate.fromTemplate(prompt);
+    const chain = new LLMChain({
+      llm: back_channel_model,
+      prompt: promptTemplate,
+    });
+    const res = await chain.run(message);
+    console.log({ res });
+    return res;
+  };
+};
 
 export const ask = (
   promptTemplate,

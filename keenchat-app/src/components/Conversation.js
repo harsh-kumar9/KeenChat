@@ -1,51 +1,21 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
+
 import { convoActions } from "../reducers/convoSlice";
 import { emojiActions } from "../reducers/emojiSlice";
-import { ask, react } from "../actions/langchainAction";
+import { ask, react, ask_backchannel } from "../actions/langchainAction";
+import "../styles/Conversation.css";
+
 import { TextField, Button } from "@mui/material";
 import ReactionEmoji from "./ReactionEmoji";
 import bot_talk from "../assets/bot-talk.png";
 import bot_listen from "../assets/bot-listen.png";
-// import OpenAI from "openai";
+import { OpenAIApi } from "openai";
 import * as sdk from "microsoft-cognitiveservices-speech-sdk";
-import "../styles/Conversation.css";
 
-// SETUP OPENAI
-const { OpenAIClient } = require("openai");
-const { InteractiveBrowserCredential } = require("@azure/identity");
-
-// const OpenAIClient = require("@azure/openai");
-// const { AzureKeyCredential } = require("@azure/core-auth");
-const endpoint = process.env.REACT_APP_AZURE_OPENAI_ENDPOINT;
-const azureApiKey = process.env.REACT_APP_AZURE_OPENAI_KEY;
-const tenantID = process.env.REACT_APP_AZURE_TENANT_ID;
-const clientID = process.env.REACT_APP_AZURE_CLIENT_ID;
-const credential = new InteractiveBrowserCredential({
-  clientId: clientID,
-  tenantId: tenantID,
-  redirectUri: "http://localhost:3000/Keenchat",
-});
-const client = new OpenAIClient(endpoint, credential);
-console.log("client: " + client);
-const deploymentId = "backchannel";
-
+// Azure Speech Services credentials
 var subscriptionKey = process.env.REACT_APP_AZURE_SPEECH_KEY;
 var serviceRegion = process.env.REACT_APP_AZURE_SPEECH_REGION; // e.g., "westus"
-
-const messages = [
-  {
-    role: "system",
-    content:
-      "Based on the conversation context provided by the user, select and generate a single-word backchannel response from this specific list: mhm, yeah, right, wow, okay, sure, hmm, uh-huh, gotcha, cool. These words are commonly used to indicate active listening and understanding in a conversation. Ensure that the chosen word is contextually appropriate, reflecting attentiveness or acknowledgment relevant to the specific part of the conversation provided. The response should consist solely of the selected backchannel word, without any additional content.",
-  },
-  { role: "assistant", content: "What happened?" },
-  {
-    role: "user",
-    content: "So I’ve always felt very scared",
-  },
-  { role: "assistant", content: "hmm" },
-];
 
 // Conversation component
 // main: "voice" or "text"
@@ -64,7 +34,11 @@ const Conversation = ({ main, backchannelType, inputType }) => {
   const [selectedEmoji, setSelectedEmoji] = useState("");
   const [synthesizer, setSynthesizer] = useState(null);
   const [userInput, setUserInput] = useState("");
-  const [conversationHistory, setConversationHistory] = useState([]);
+  const [lastBotMsg, setLastBotMsg] = useState("");
+
+  const backchannel_prompt = `  
+  Based on the conversation context provided by the user, select and generate a single-word backchannel response from this specific list: "mhm", "yeah", "right", "wow", "okay", "sure", "hmm", "uh-huh", "gotcha", "cool". These words are commonly used to indicate active listening and understanding in a conversation. Ensure that the chosen word is contextually appropriate, reflecting attentiveness or acknowledgment relevant to the specific part of the conversation provided. The response should consist solely of the selected backchannel word, without any additional content. If no backchannel word is an appropriate response, please return "...". Some examples include, if the input message is "So I’ve always felt very scared", the response could be "hmm". If the input message is "Yeah you know that feeling when you’re so pumped up" the response could be "yeah!".
+  `;
 
   // constants
   const moodToEmojiMapping = {
@@ -84,7 +58,6 @@ const Conversation = ({ main, backchannelType, inputType }) => {
     "oh",
     "ah",
     "hmm",
-    "mhm",
     "I see",
     "okay",
     "uh huh",
@@ -92,18 +65,18 @@ const Conversation = ({ main, backchannelType, inputType }) => {
     "uh",
   ];
 
-  // SENTIMENT  ANALYSIS
+  // Update emojiForMood based on the value of convo.reaction
   useEffect(() => {
     console.log(convo.reaction);
     const selectedEmoji = moodToEmojiMapping[convo.reaction] || "."; // Default to a question mark if mood is not found
     setSelectedEmoji(selectedEmoji);
   }, [convo.reaction]);
 
-  // SPEECH RECOGNITION & TTS
+  // Speech recognition
   const [recognizer, setRecognizer] = useState(null); // State to store the recognizer
   const [isListening, setIsListening] = useState(false); // State to track if currently listening
 
-  // Function to start speech recognition
+  // Function to initialize and start speech recognition
   const startContinuousSpeechRecognition = () => {
     const speechConfig = sdk.SpeechConfig.fromSubscription(
       subscriptionKey,
@@ -207,107 +180,115 @@ const Conversation = ({ main, backchannelType, inputType }) => {
     }
   };
 
-  // MAIN MESSAGE BOT
-  // Add user input to conversation history on submit
-  const processMessage = async () => {
-    if (inputValue.trim() !== "") {
-      // Append user input to conversation history
-      setConversationHistory((prevHistory) => [
-        ...prevHistory,
-        { role: "user", content: inputValue },
-      ]);
+  // Get chat history from JSON
+  const historyToText = (botIdentifier, humanIdentifier, historyJSON) => {
+    let text = "";
+    console.log("history to text");
+    console.log(historyJSON);
+    let botMsg = "";
+    for (let i = 0; i < historyJSON.length; i++) {
+      // msg is by human
+      if (historyJSON[i][humanIdentifier].length > 0) {
+        text += `${humanIdentifier}: ` + historyJSON[i][humanIdentifier] + "\n";
+      }
+      // msg is by bot
+      if (historyJSON[i][botIdentifier].length > 0) {
+        botMsg = historyJSON[i][botIdentifier];
+        text += `${botIdentifier}: ` + botMsg + "\n";
+      }
+    }
 
-      // Reset input value to empty
-      setInputValue("");
+    return text;
+  };
+
+  const processMessage = () => {
+    if (inputValue.trim() !== "") {
+      const inputJSON = JSON.parse(JSON.stringify(langchain.inputJSON));
+      inputJSON.chat_history += historyToText(
+        langchain.bot_identifier,
+        langchain.human_identifier,
+        langchain.history
+      );
+      inputJSON.inputs = inputValue;
+
+      // dispatch convo reset
+      dispatch(convoActions.reset());
+
+      // get bot message
+      dispatch(
+        ask(
+          langchain.prompt,
+          langchain.bot_identifier,
+          langchain.human_identifier,
+          inputJSON
+        )
+      ).then((botResponse) => {
+        // reset input value to empty
+        setInputValue("");
+        let index = 0;
+        let msg = botResponse["text"];
+        const intervalId = setInterval(() => {
+          setLastBotMsg(msg.slice(0, index + 1));
+          index++;
+          if (index === msg.length) clearInterval(intervalId);
+        }, 10); // Adjust the delay between characters as needed
+
+        // text-to-speech
+        if (main === "voice") {
+          synthesizeSpeech(botResponse["text"]);
+        }
+      });
     }
   };
 
+  // Generate bot response after user submits message
   const handleMessageSubmit = (e) => {
     setSelectedBackchannel("");
+    setLastBotMsg("");
     setIsTyping(false);
     e.preventDefault();
     processMessage();
   };
 
-  // get bot response from gpt3.5 and add to conversation history
-  useEffect(() => {
-    // Function to get responses from OpenAI
-    const getOpenAIResponse = async () => {
-      try {
-        const deploymentId = "gpt-4";
-        const events = client.listChatCompletions(
-          deploymentId,
-          conversationHistory,
-          { maxTokens: 128 }
-        );
-        for await (const event of events) {
-          for (const choice of event.choices) {
-            const delta = choice.delta?.content;
-            if (delta !== undefined) {
-              // Update conversation history with the response from OpenAI
-              setConversationHistory((prevHistory) => [
-                ...prevHistory,
-                { role: "assistant", content: delta },
-              ]);
+  // Generate backchannel while user types
+  const handleMessageChange = async (e) => {
+    const message = e.target.value;
+    setInputValue(message);
+    setIsTyping(true);
 
-              // If the main is set to voice, synthesize the response
-              if (main === "voice") {
-                synthesizeSpeech(delta);
-              }
-            }
-          }
-        }
-      } catch (err) {
-        console.error("Error in getting response from OpenAI:", err);
-      }
-    };
+    if (message === "") {
+      dispatch(convoActions.reset());
+    } else {
+      const inputJSON = { inputs: message };
+      dispatch(react(inputJSON));
 
-    // Only call OpenAI when the last message in history is from the user
-    if (
-      conversationHistory.length > 0 &&
-      conversationHistory[conversationHistory.length - 1].role === "user"
-    ) {
-      getOpenAIResponse();
+      // handle backchannel
+      generateBackchannelBot(message);
     }
-  }, [conversationHistory]);
+  };
 
-  // BACKCHANNEL BOT
-  // get backchannel from gpt3.5 and set as selected backchannel
   const generateBackchannelBot = async (message) => {
     console.log("checking for backchannel...");
-    if (backchannelType != "none") {
-      //TODO: generate backchannel from chatgpt
-      const messagesWithUser = messages.concat({
-        role: "user",
-        content: message,
-      });
-      const result = await client.getChatCompletions(
-        deploymentId,
-        messagesWithUser
-      );
+    if (backchannelType != "none" && message.length % 10 == 0) {
+      dispatch(ask_backchannel(backchannel_prompt, message)).then(
+        (botResponse) => {
+          console.log("backchannel", botResponse);
+          const backchannelText = botResponse;
+          let index = 0;
+          const backchannelInterval = setInterval(() => {
+            setSelectedBackchannel(backchannelText.slice(0, index));
+            index++;
+            if (index > backchannelText.length) {
+              clearInterval(backchannelInterval);
+            }
+          }, 100);
 
-      for (const choice of result.choices) {
-        console.log("Results:");
-        console.log(choice.message);
-      }
-      const backchannel = backchannels[0];
-      const backchannelText = `${backchannel}...`;
-      setSelectedBackchannel(backchannelText);
-      console.log("backchannel: " + backchannel);
-
-      // text-to-speech
-      if (backchannelType == "voice") {
-        synthesizeSpeech(backchannel);
-      }
-      // Use setInterval to update the backchannel one letter at a time
-      let index = 0;
-      const backchannelInterval = setInterval(() => {
-        setSelectedBackchannel(backchannelText.slice(0, index));
-        index++;
-        if (index > backchannelText.length) {
-          clearInterval(backchannelInterval);
+          // text-to-speech
+          if (backchannelType == "voice") {
+            synthesizeSpeech(backchannelText);
+          }
         }
-      }, 100);
+      );
     }
   };
 
@@ -347,23 +328,26 @@ const Conversation = ({ main, backchannelType, inputType }) => {
     }
   };
 
-  // check for backchannel after message change
-  const handleMessageChange = async (e) => {
-    const message = e.target.value;
-    setInputValue(message);
-    setIsTyping(true);
+  // Create a ref for the convo-history-container
+  const convoHistoryRef = useRef(null);
 
-    if (message.length > 5) {
-      generateBackchannelBot(message);
+  // Scroll the convo-history-container to the bottom
+  const scrollToBottom = () => {
+    if (convoHistoryRef.current) {
+      convoHistoryRef.current.scrollTop = convoHistoryRef.current.scrollHeight;
     }
   };
 
+  // Scroll to bottom whenever langchain.history changes
+  useEffect(() => {
+    scrollToBottom();
+  }, [lastBotMsg]);
   return (
     <div className="conversation">
       <h1>KeenChat</h1>
 
-      <div className="convo-history-container">
-        {langchain.history.map((history, index) => (
+      <div className="convo-history-container" ref={convoHistoryRef}>
+        {langchain.history.slice(0, -1).map((history, index) => (
           <div key={index}>
             <div className="human-convo">
               {/* <span>{langchain.human_identifier}</span> */}
@@ -372,11 +356,20 @@ const Conversation = ({ main, backchannelType, inputType }) => {
 
             <div className="bot-convo">
               {/* <span>{langchain.bot_identifier}</span> */}
-              <p>
-                {index === langchain.history.length - 1
-                  ? convo.output
-                  : history[langchain.bot_identifier]}
-              </p>
+              <p>{history[langchain.bot_identifier]}</p>
+            </div>
+          </div>
+        ))}
+        {langchain.history.slice(-1).map((history, index) => (
+          <div key={index}>
+            <div className="human-convo">
+              {/* <span>{langchain.human_identifier}</span> */}
+              <p>{history[langchain.human_identifier]}</p>
+            </div>
+
+            <div className="bot-convo">
+              {/* <span>{langchain.bot_identifier}</span> */}
+              <p>{lastBotMsg}</p>
             </div>
           </div>
         ))}
