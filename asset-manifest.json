@@ -1,20 +1,20 @@
 {
   "files": {
-    "main.css": "/KeenChat/static/css/main.5e3ea804.css",
-    "main.js": "/KeenChat/static/js/main.d884f734.js",
+    "main.css": "/KeenChat/static/css/main.1591afd8.css",
+    "main.js": "/KeenChat/static/js/main.0f88c7ee.js",
     "static/js/812.ea8e6e86.chunk.js": "/KeenChat/static/js/812.ea8e6e86.chunk.js",
     "static/js/787.9a765a7f.chunk.js": "/KeenChat/static/js/787.9a765a7f.chunk.js",
     "static/media/bot-listen.png": "/KeenChat/static/media/bot-listen.3a81260ba44013becb43.png",
     "static/media/bot-talk.png": "/KeenChat/static/media/bot-talk.f3662dde1dd75b1a696c.png",
     "static/media/speech-processor.js": "/KeenChat/static/media/speech-processor.8d12dec11bcef8e1029b.js",
     "index.html": "/KeenChat/index.html",
-    "main.5e3ea804.css.map": "/KeenChat/static/css/main.5e3ea804.css.map",
-    "main.d884f734.js.map": "/KeenChat/static/js/main.d884f734.js.map",
+    "main.1591afd8.css.map": "/KeenChat/static/css/main.1591afd8.css.map",
+    "main.0f88c7ee.js.map": "/KeenChat/static/js/main.0f88c7ee.js.map",
     "812.ea8e6e86.chunk.js.map": "/KeenChat/static/js/812.ea8e6e86.chunk.js.map",
     "787.9a765a7f.chunk.js.map": "/KeenChat/static/js/787.9a765a7f.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.5e3ea804.css",
-    "static/js/main.d884f734.js"
+    "static/css/main.1591afd8.css",
+    "static/js/main.0f88c7ee.js"
   ]
 }
