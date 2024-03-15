@@ -35,6 +35,7 @@ const Conversation = ({ main, backchannelType, inputType }) => {
   const [synthesizer, setSynthesizer] = useState(null);
   const [userInput, setUserInput] = useState("");
   const [lastBotMsg, setLastBotMsg] = useState("");
+  
 
   const backchannel_prompt = `  
   Based on the conversation context provided by the user, select and generate a single-word backchannel response from this specific list: "mhm", "yeah", "right", "wow", "okay", "sure", "hmm", "uh-huh", "gotcha", "cool". These words are commonly used to indicate active listening and understanding in a conversation. Ensure that the chosen word is contextually appropriate, reflecting attentiveness or acknowledgment relevant to the specific part of the conversation provided. The response should consist solely of the selected backchannel word, without any additional content. If no backchannel word is an appropriate response, please return "...". Some examples include, if the input message is "So I’ve always felt very scared", the response could be "hmm". If the input message is "Yeah you know that feeling when you’re so pumped up" the response could be "yeah!".
@@ -78,6 +79,7 @@ const Conversation = ({ main, backchannelType, inputType }) => {
 
   // Function to initialize and start speech recognition
   const startContinuousSpeechRecognition = () => {
+    let accumulatedText = "";
     const speechConfig = sdk.SpeechConfig.fromSubscription(
       subscriptionKey,
       serviceRegion
@@ -96,8 +98,10 @@ const Conversation = ({ main, backchannelType, inputType }) => {
 
     newRecognizer.recognized = (s, e) => {
       if (e.result.reason === sdk.ResultReason.RecognizedSpeech) {
-        console.log(`RECOGNIZED final: Text=${e.result.text}`);
-        setInputValue(e.result.text); // Final update to inputValue
+        accumulatedText += ` ${e.result.text}`;
+        console.log(`RECOGNIZED : Text=${e.result.text}`);
+        console.log(`accumulatedText: ${accumulatedText}`);
+        setInputValue(accumulatedText); // Final update to inputValue
       }
     };
 
@@ -144,6 +148,7 @@ const Conversation = ({ main, backchannelType, inputType }) => {
       subscriptionKey,
       serviceRegion
     );
+
     const audioConfig = sdk.AudioConfig.fromSpeakerOutput();
     const newSynthesizer = new sdk.SpeechSynthesizer(speechConfig, audioConfig);
 
