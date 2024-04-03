@@ -89,6 +89,7 @@ const Conversation = ({
 
   // Function to initialize and start speech recognition
   const startContinuousSpeechRecognition = () => {
+    let accumulatedText = "";
     const speechConfig = sdk.SpeechConfig.fromSubscription(
       subscriptionKey,
       serviceRegion
