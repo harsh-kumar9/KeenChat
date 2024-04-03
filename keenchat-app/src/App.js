@@ -1,6 +1,6 @@
-import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
-
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Conversation from "./components/Conversation";
+import Navigation from "./components/Navigation";
 
 // 6 routes for 6 different conversation types
 // 1. voice-voice: voice bot message, voice bot backchannelType
@@ -13,11 +13,12 @@ import Conversation from "./components/Conversation";
 function App() {
   return (
     <div>
-      <Router basename="/KeenChat">
+      <Router>
         <Routes>
-          <Route path="/" element={<Conversation />} />
-          <Route
-            path="/voice-voice"
+          <Route path="/KeenChat" element={<Navigation />} />
+          <Route path="/KeenChat/apple" element={<Conversation />} />
+          {/* <Route
+            path="/KeenChat/voice-voice"
             element={
               <Conversation
                 main="voice"
@@ -27,7 +28,7 @@ function App() {
             }
           />
           <Route
-            path="/voice-text"
+            path="/KeenChat/voice-text"
             element={
               <Conversation
                 main="voice"
@@ -37,7 +38,7 @@ function App() {
             }
           />
           <Route
-            path="/voice-none"
+            path="/KeenChat/voice-none"
             element={
               <Conversation
                 main="voice"
@@ -45,9 +46,9 @@ function App() {
                 inputType="text"
               />
             }
-          />
-          <Route
-            path="/text-voice"
+          /> */}
+          {/* <Route
+            path="/KeenChat/text-voice"
             element={
               <Conversation
                 main="text"
@@ -55,9 +56,9 @@ function App() {
                 inputType="text"
               />
             }
-          />
+          /> */}
           <Route
-            path="/text-text"
+            path="/KeenChat/all-text"
             element={
               <Conversation
                 main="text"
@@ -67,22 +68,34 @@ function App() {
             }
           />
           <Route
-            path="/text-none"
-            element={
-              <Conversation
-                main="text"
-                backchannelType="none"
-                inputType="text"
-              />
-            }
-          />
-          <Route
-            path="/all-voice"
+            path="/KeenChat/all-voice"
             element={
               <Conversation
                 main="voice"
                 backchannelType="voice"
                 inputType="voice"
+              />
+            }
+          />
+          <Route
+            path="/KeenChat/all-text-develop"
+            element={
+              <Conversation
+                main="text"
+                backchannelType="text"
+                inputType="text"
+                develop={true}
+              />
+            }
+          />
+          <Route
+            path="/KeenChat/all-voice-develop"
+            element={
+              <Conversation
+                main="voice"
+                backchannelType="voice"
+                inputType="voice"
+                develop={true}
               />
             }
           />

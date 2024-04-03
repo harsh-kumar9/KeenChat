@@ -1,5 +1,9 @@
 /* Define a class for fading in messages */
 
+body {
+  background-color: #f9f2e9;
+}
+
 @keyframes fadeIn {
   0% {
     opacity: 0;
@@ -38,17 +42,17 @@
 .conversation {
   background-color: #f9f2e9;
   font-family: Arial, sans-serif;
-  padding: 5px 20px 0px 20px;
-  height: 100vh;
+  padding: 0px 20px; /* horizontal padding */
+  /* height: 100vh; */
 }
 
 .convo-history-container {
   border: 1px solid #d6d2c4;
-  padding: 10px;
+  /* padding: 10px; */
   border-radius: 5px;
   margin-bottom: 15px;
-  min-height: 70vh;
-  max-height: 70vh;
+  min-height: 65vh;
+  max-height: 65vh;
   overflow-y: auto;
 }
 

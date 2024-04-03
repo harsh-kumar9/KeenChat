@@ -1,0 +1,19 @@
+.navigation {
+  display: flex;
+  flex-direction: column; /* Stack items vertically */
+  justify-content: center;
+  align-items: center;
+  height: 100vh; /* Assuming you want the buttons vertically centered on the page */
+}
+
+.routeButton {
+  display: block; /* Display as block to stack vertically */
+  padding: 10px 20px;
+  background-color: #f9bd0a;
+  color: black;
+  text-decoration: none;
+  text-align: center;
+  border: none;
+  border-radius: 5px;
+  margin: 5px;
+}

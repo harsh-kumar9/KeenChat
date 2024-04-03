@@ -1,16 +1,7 @@
 import { createSlice } from "@reduxjs/toolkit";
 
-// const prompt = `The following is a friendly conversation between a human and an AI.
-// The AI is talkative and provides lots of specific details from its context.
-// If the AI does not know the answer to a question, it truthfully says it does not know.
-
-// Current conversation:
-// {chat_history}
-// Human: {inputs}
-// AI:`;
-
 const prompt = `The following is a friendly conversation between a human and an AI. 
-The AI is friendly and enjoys making small talk and conversation. It does not ramble on and on.
+The AI is talkative and provides lots of specific details from its context. 
 If the AI does not know the answer to a question, it truthfully says it does not know.
 
 Current conversation:

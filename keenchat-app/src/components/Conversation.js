@@ -21,7 +21,12 @@ main: "voice" or "text"
 backchannel: "voice", "text", or "none"
 inputType: "text" or "voice" (for user input, not implemented yet
 */
-const Conversation = ({ main, backchannelType, inputType }) => {
+const Conversation = ({
+  main,
+  backchannelType,
+  inputType,
+  develop = false,
+}) => {
   // TODO: save data to database
   // global states
   const dispatch = useDispatch();
@@ -37,6 +42,8 @@ const Conversation = ({ main, backchannelType, inputType }) => {
   const [userInput, setUserInput] = useState("");
   const [lastBotMsg, setLastBotMsg] = useState("");
   const [voiceName, setVoiceName] = useState("en-US-AriaNeural");
+
+  const [backchannelFrequency, setBackchannelFrequency] = useState(15);
 
   const lst = `specific list: "mmm", "yeah", "right", "wow", "okay", "sure", "hmm", "uh-huh", "gotcha", "cool".`;
   const backchannel_prompt = `  
@@ -69,15 +76,16 @@ const Conversation = ({ main, backchannelType, inputType }) => {
   ];
 
   // Update emojiForMood based on the value of convo.reaction
-  useEffect(() => {
-    console.log(convo.reaction);
-    const selectedEmoji = moodToEmojiMapping[convo.reaction] || "."; // Default to a question mark if mood is not found
-    setSelectedEmoji(selectedEmoji);
-  }, [convo.reaction]);
+  // useEffect(() => {
+  //   console.log(convo.reaction);
+  //   const selectedEmoji = moodToEmojiMapping[convo.reaction] || "."; // Default to a question mark if mood is not found
+  //   setSelectedEmoji(selectedEmoji);
+  // }, [convo.reaction]);
 
   // Speech recognition
   const [recognizer, setRecognizer] = useState(null); // State to store the recognizer
   const [isListening, setIsListening] = useState(false); // State to track if currently listening
+  const [synthesizer, setSynthesizer] = useState(null); // State to store the synthesizer
 
   // Function to initialize and start speech recognition
   const startContinuousSpeechRecognition = () => {
@@ -173,6 +181,7 @@ const Conversation = ({ main, backchannelType, inputType }) => {
     speechConfig.speechSynthesisLanguage = "en-US";
     const audioConfig = sdk.AudioConfig.fromSpeakerOutput();
     const newSynthesizer = new sdk.SpeechSynthesizer(speechConfig, audioConfig);
+    setSynthesizer(newSynthesizer);
     newSynthesizer.speakTextAsync(
       text,
       (result) => {
@@ -308,6 +317,7 @@ const Conversation = ({ main, backchannelType, inputType }) => {
   const handleMessageSubmit = (e) => {
     setSelectedBackchannel(""); // Clear backchannel
     setLastBotMsg(""); // Clear last bot message
+    setInputValue(""); // Clear input value
     setIsTyping(false); // Set isTyping to false (changes bot avatar)
     e.preventDefault();
     processMessage(); // Process message
@@ -323,21 +333,30 @@ const Conversation = ({ main, backchannelType, inputType }) => {
     if (message === "") {
       dispatch(convoActions.reset());
     } else {
-      const inputJSON = { inputs: message };
-      dispatch(react(inputJSON));
+      // const inputJSON = { inputs: message };
+      // dispatch(react(inputJSON));
 
       // handle backchannel
-      generateBackchannelBot(message);
+      if (message.length % backchannelFrequency == 0) {
+        generateBackchannelBot(message);
+      }
     }
   };
 
   const generateBackchannelBot = async (message) => {
     console.log("checking for backchannel...");
-    if (backchannelType != "none" && message.length % 20 == 0) {
+    if (
+      backchannelType != "none" &&
+      message.length % backchannelFrequency == 0
+    ) {
+      console.log("generating backchannel...");
       dispatch(ask_backchannel(backchannel_prompt, message)).then(
         (botResponse) => {
+          if (botResponse == "...") {
+            return;
+          }
           console.log("backchannel", botResponse);
-          const backchannelText = botResponse;
+          const backchannelText = botResponse + "...";
           let index = 0;
           // text-to-speech
           if (backchannelType == "voice") {
@@ -371,10 +390,31 @@ const Conversation = ({ main, backchannelType, inputType }) => {
     scrollToBottom();
   }, [lastBotMsg]);
 
+  const handleSliderChange = (event) => {
+    setBackchannelFrequency(event.target.value);
+  };
+
   // frontend
   return (
     <div className="conversation">
       <h1>KeenChat</h1>
+      {develop ? (
+        <div className="bc_slider" style={{ paddingBottom: "20px" }}>
+          <label htmlFor="backchannel-slider" style={{ paddingRight: "20px" }}>
+            Backchannel Frequency: {backchannelFrequency}
+          </label>
+          <input
+            type="range"
+            id="backchannel-slider"
+            name="backchannel-slider"
+            value={backchannelFrequency}
+            onChange={handleSliderChange}
+            min={1}
+            max={30}
+            style={{ width: "70%" }}
+          />
+        </div>
+      ) : null}
 
       <div className="convo-history-container" ref={convoHistoryRef}>
         {langchain.history.slice(0, -1).map((history, index) => (
@@ -423,7 +463,7 @@ const Conversation = ({ main, backchannelType, inputType }) => {
                 color: "transparent",
               }}
             >
-              {selectedEmoji}
+              ...
             </p>
           </div>
         ) : null}
